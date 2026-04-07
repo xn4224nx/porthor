@@ -66,6 +66,23 @@ pub fn is_storage_valid() -> Option<usize> {
     );
 }
 
+/// Sandboxes are usually just booted into so a low uptime can indicate an
+/// artifical environment.
+pub fn is_uptime_valid() -> Option<usize> {
+    None
+}
+
+/// Sleep functions can be altered before inserting the program in a sandbox.
+pub fn is_sleep_valid() -> Option<usize> {
+    None
+}
+
+/// The Sandbox is expected to be isolated from the internet and the network
+/// traffic will be low or nil when in an artifical host.
+pub fn is_network_valid() -> Option<usize> {
+    None
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
