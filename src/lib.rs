@@ -11,6 +11,7 @@ const MIN_CPU: usize = 4;
 const MIN_PHYS_CORES: usize = 4;
 const MIN_RAM: u64 = 8_000_000_000; // Aproximately 8GB
 const MIN_SWAP: u64 = 512_000_000; // Aproximately 512MB
+const MIN_GB_STORAGE: usize = 512;
 
 /// Read certain attributes of the system and using pre-determined thresholds
 /// make a judgement about whether this code is running in a sandbox.
@@ -44,6 +45,27 @@ pub fn is_sys_attr_valid() -> Option<usize> {
     return Some(danger_score);
 }
 
+/// Calculate the total storage on the system in gigabytes and determine how
+/// unusually low it is.
+pub fn is_storage_valid() -> Option<usize> {
+    let mut gigabytes_found = 0;
+
+    if !sysinfo::IS_SUPPORTED_SYSTEM {
+        return None;
+    }
+
+    /* Sum all available storage. */
+    for disk in &sysinfo::Disks::new_with_refreshed_list() {
+        gigabytes_found += disk.total_space().div_ceil(1_000_000_000) as usize;
+    }
+
+    return Some(
+        MIN_GB_STORAGE
+            .saturating_sub(gigabytes_found)
+            .saturating_div(gigabytes_found.saturating_add(1)),
+    );
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -51,5 +73,10 @@ mod tests {
     #[test]
     fn run_is_sys_attr_valid() {
         assert_eq!(is_sys_attr_valid(), Some(0));
+    }
+
+    #[test]
+    fn run_is_storage_valid() {
+        assert_eq!(is_storage_valid(), Some(0));
     }
 }
