@@ -7,6 +7,8 @@
  *
  */
 
+use rand::prelude::*;
+
 const MIN_CPU: usize = 4;
 const MIN_PHYS_CORES: usize = 4;
 const MIN_RAM: u64 = 8_000_000_000; // Aproximately 8GB
@@ -69,18 +71,45 @@ pub fn is_storage_valid() -> Option<usize> {
 /// Sandboxes are usually just booted into so a low uptime can indicate an
 /// artifical environment.
 pub fn is_uptime_valid() -> Option<usize> {
-    None
+    let utime = sysinfo::System::uptime() as usize;
+    return Some(
+        1000_usize
+            .saturating_sub(utime)
+            .saturating_div(utime.saturating_add(1)),
+    );
 }
 
 /// Sleep functions can be altered before inserting the program in a sandbox.
 pub fn is_sleep_valid() -> Option<usize> {
-    None
+    let mut rng = rand::rng();
+    let sleep_dur = rng.random_range(30..=60);
+    let utime_0 = sysinfo::System::uptime();
+
+    /* Sleep for a random number of seconds. */
+    std::thread::sleep(std::time::Duration::from_secs(sleep_dur));
+
+    /* Read the uptime after the sleep has happened.  */
+    let utime_1 = sysinfo::System::uptime();
+
+    return Some(
+        utime_1
+            .saturating_add(sleep_dur)
+            .saturating_sub(utime_0 + 100) as usize,
+    );
 }
 
 /// The Sandbox is expected to be isolated from the internet and the network
 /// traffic will be low or nil when in an artifical host.
 pub fn is_network_valid() -> Option<usize> {
-    None
+    let mut total_trans: usize = 0;
+    let mut total_recev: usize = 0;
+
+    /* Sum the total data receieved and transmitted. */
+    for (_, data) in &sysinfo::Networks::new_with_refreshed_list() {
+        total_trans += data.total_transmitted() as usize;
+        total_recev += data.total_received() as usize;
+    }
+    return Some(10_000_usize.saturating_div(total_trans + total_recev));
 }
 
 #[cfg(test)]
@@ -95,5 +124,19 @@ mod tests {
     #[test]
     fn run_is_storage_valid() {
         assert_eq!(is_storage_valid(), Some(0));
+    }
+
+    #[test]
+    fn run_is_uptime_valid() {
+        assert_eq!(is_uptime_valid(), Some(0));
+    }
+
+    #[test]
+    fn run_is_sleep_valid() {
+        assert_eq!(is_sleep_valid(), Some(0));
+    }
+    #[test]
+    fn run_is_network_valid() {
+        assert_eq!(is_network_valid(), Some(0));
     }
 }
