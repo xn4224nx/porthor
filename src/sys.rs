@@ -113,6 +113,12 @@ pub fn is_network_valid() -> Option<usize> {
     return Some(10_000_usize.saturating_div(total_trans + total_recev));
 }
 
+/// Within a sandbox the supplied temperatur value might not vary like a real
+/// computer.
+pub fn is_temp_valid() -> Option<usize> {
+    None
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -136,8 +142,14 @@ mod tests {
     fn run_is_sleep_valid() {
         assert_eq!(is_sleep_valid(), Some(0));
     }
+
     #[test]
     fn run_is_network_valid() {
         assert_eq!(is_network_valid(), Some(0));
+    }
+
+    #[test]
+    fn run_is_temp_valid() {
+        assert_eq!(is_temp_valid(), Some(0));
     }
 }
