@@ -7,4 +7,5 @@
  *
  */
 
+mod net;
 mod sys;
