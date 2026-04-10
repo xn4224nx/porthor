@@ -56,7 +56,27 @@ pub fn connect_to_random_domain() -> Option<usize> {
 /// Ensure that sleep functions have not been tampered with by accessing a
 /// network time protocal server.
 pub fn ntp_sleep_check() -> Option<usize> {
-    None
+    let ntp_server = String::from("time.windows.com:123");
+
+    /* Sleep for a random number of seconds. */
+    let mut rng: SmallRng = rand::make_rng();
+    let sleep_len = rng.random_range(10..=90);
+
+    /* Consult the NTP server. */
+    let response: ntp::packet::Packet = ntp::request(&ntp_server).ok()?;
+    let old_ntp_time = response.transmit_time.sec;
+
+    std::thread::sleep(std::time::Duration::from_secs(sleep_len));
+
+    /* After the sleep check again. */
+    let response: ntp::packet::Packet = ntp::request(&ntp_server).ok()?;
+    let new_ntp_time = response.transmit_time.sec;
+
+    return Some(
+        new_ntp_time
+            .abs_diff(old_ntp_time)
+            .abs_diff(sleep_len as u32) as usize,
+    );
 }
 
 /// Connect to a random news site and collect the date of a news article.
