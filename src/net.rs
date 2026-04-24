@@ -12,7 +12,8 @@ use std::net::TcpStream;
 /// that it was successful. This function connects to domains that do not exist.
 /// If these connections are successful the executable is most likely in a
 /// sandbox.
-pub fn connect_to_random_domain() -> Option<usize> {
+pub fn connect_to_random_domain() -> Option<f32> {
+    let total_conns = 10;
     let mut successful_connections = 0;
     let letters = vec![
         'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r',
@@ -25,7 +26,7 @@ pub fn connect_to_random_domain() -> Option<usize> {
 
     /* Generate and then try and connect to 10 domains. */
     let mut rng: SmallRng = rand::make_rng();
-    for _ in 0..10 {
+    for _ in 0..total_conns {
         let site_len = rng.random_range(5..=12);
 
         /* Generate the site name. */
@@ -49,14 +50,17 @@ pub fn connect_to_random_domain() -> Option<usize> {
             successful_connections += 1;
         };
     }
-    return Some(successful_connections);
+
+    /* Return the fraction of sites that connected. */
+    return Some((successful_connections as f32) / (total_conns as f32));
 }
 
 /// Sleep functions can be altered before inserting the program in a sandbox.
 /// Ensure that sleep functions have not been tampered with by accessing a
 /// network time protocal server.
-pub fn ntp_sleep_check() -> Option<usize> {
+pub fn ntp_sleep_check() -> Option<f32> {
     let ntp_server = String::from("time.windows.com:123");
+    let margin_err_secs = 10;
 
     /* Sleep for a random number of seconds. */
     let mut rng: SmallRng = rand::make_rng();
@@ -70,18 +74,20 @@ pub fn ntp_sleep_check() -> Option<usize> {
 
     /* After the sleep check again. */
     let response: ntp::packet::Packet = ntp::request(&ntp_server).ok()?;
-    let new_ntp_time = response.transmit_time.sec;
+    let ntp_time_diff = response.transmit_time.sec.abs_diff(old_ntp_time);
 
     return Some(
-        new_ntp_time
-            .abs_diff(old_ntp_time)
-            .abs_diff(sleep_len as u32) as usize,
+        (ntp_time_diff
+            .abs_diff(sleep_len as u32)
+            .saturating_sub(margin_err_secs) as f32
+            / sleep_len as f32)
+            .clamp(0.0, 1.0),
     );
 }
 
 /// Connect to a random news site and collect the date of a news article.
 /// Compare that date to the current system data and see if they match.
-pub fn news_site_date_check() -> Option<usize> {
+pub fn news_site_date_check() -> Option<f32> {
     None
 }
 
@@ -91,16 +97,16 @@ mod tests {
 
     #[test]
     fn run_connect_to_random_domain() {
-        assert_eq!(connect_to_random_domain(), Some(0));
+        assert_eq!(connect_to_random_domain(), Some(0.0));
     }
 
     #[test]
     fn run_ntp_sleep_check() {
-        assert_eq!(ntp_sleep_check(), Some(0));
+        assert_eq!(ntp_sleep_check(), Some(0.0));
     }
 
     #[test]
     fn run_news_site_date_check() {
-        assert_eq!(news_site_date_check(), Some(0));
+        assert_eq!(news_site_date_check(), Some(0.0));
     }
 }

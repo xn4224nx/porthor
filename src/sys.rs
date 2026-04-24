@@ -18,7 +18,7 @@ const MIN_GB_STORAGE: usize = 512;
 
 /// Read certain attributes of the system and using pre-determined thresholds
 /// make a judgement about whether this code is running in a sandbox.
-pub fn is_sys_attr_valid() -> Option<usize> {
+pub fn is_sys_attr_valid() -> Option<f32> {
     let mut danger_score = 0;
 
     if !sysinfo::IS_SUPPORTED_SYSTEM {
@@ -45,12 +45,12 @@ pub fn is_sys_attr_valid() -> Option<usize> {
         danger_score += 1;
     }
 
-    return Some(danger_score);
+    return Some((danger_score as f32) / 4.0);
 }
 
 /// Calculate the total storage on the system in gigabytes and determine how
 /// unusually low it is.
-pub fn is_storage_valid() -> Option<usize> {
+pub fn is_storage_valid() -> Option<f32> {
     let mut gigabytes_found = 0;
 
     if !sysinfo::IS_SUPPORTED_SYSTEM {
@@ -65,23 +65,23 @@ pub fn is_storage_valid() -> Option<usize> {
     return Some(
         MIN_GB_STORAGE
             .saturating_sub(gigabytes_found)
-            .saturating_div(gigabytes_found.saturating_add(1)),
+            .saturating_div(gigabytes_found.saturating_add(1)) as f32,
     );
 }
 
 /// Sandboxes are usually just booted into so a low uptime can indicate an
 /// artifical environment.
-pub fn is_uptime_valid() -> Option<usize> {
+pub fn is_uptime_valid() -> Option<f32> {
     let utime = sysinfo::System::uptime() as usize;
     return Some(
         1000_usize
             .saturating_sub(utime)
-            .saturating_div(utime.saturating_add(1)),
+            .saturating_div(utime.saturating_add(1)) as f32,
     );
 }
 
 /// Sleep functions can be altered before inserting the program in a sandbox.
-pub fn is_sleep_valid() -> Option<usize> {
+pub fn is_sleep_valid() -> Option<f32> {
     let mut rng = rand::rng();
     let sleep_dur = rng.random_range(30..=60);
     let utime_0 = sysinfo::System::uptime();
@@ -95,13 +95,13 @@ pub fn is_sleep_valid() -> Option<usize> {
     return Some(
         utime_1
             .saturating_add(sleep_dur)
-            .saturating_sub(utime_0 + 100) as usize,
+            .saturating_sub(utime_0 + 100) as f32,
     );
 }
 
 /// The Sandbox is expected to be isolated from the internet and the network
 /// traffic will be low or nil when in an artifical host.
-pub fn is_network_valid() -> Option<usize> {
+pub fn is_network_valid() -> Option<f32> {
     let mut total_trans: usize = 0;
     let mut total_recev: usize = 0;
 
@@ -110,12 +110,12 @@ pub fn is_network_valid() -> Option<usize> {
         total_trans += data.total_transmitted() as usize;
         total_recev += data.total_received() as usize;
     }
-    return Some(10_000_usize.saturating_div(total_trans + total_recev));
+    return Some(10_000_usize.saturating_div(total_trans + total_recev) as f32);
 }
 
 /// Within a sandbox the supplied temperatur value might not vary like a real
 /// computer.
-pub fn is_temp_valid() -> Option<usize> {
+pub fn is_temp_valid() -> Option<f32> {
     None
 }
 
@@ -125,31 +125,31 @@ mod tests {
 
     #[test]
     fn run_is_sys_attr_valid() {
-        assert_eq!(is_sys_attr_valid(), Some(0));
+        assert_eq!(is_sys_attr_valid(), Some(0.0));
     }
 
     #[test]
     fn run_is_storage_valid() {
-        assert_eq!(is_storage_valid(), Some(0));
+        assert_eq!(is_storage_valid(), Some(0.0));
     }
 
     #[test]
     fn run_is_uptime_valid() {
-        assert_eq!(is_uptime_valid(), Some(0));
+        assert_eq!(is_uptime_valid(), Some(0.0));
     }
 
     #[test]
     fn run_is_sleep_valid() {
-        assert_eq!(is_sleep_valid(), Some(0));
+        assert_eq!(is_sleep_valid(), Some(0.0));
     }
 
     #[test]
     fn run_is_network_valid() {
-        assert_eq!(is_network_valid(), Some(0));
+        assert_eq!(is_network_valid(), Some(0.0));
     }
 
     #[test]
     fn run_is_temp_valid() {
-        assert_eq!(is_temp_valid(), Some(0));
+        assert_eq!(is_temp_valid(), Some(0.0));
     }
 }
