@@ -8,4 +8,5 @@
  */
 
 mod net;
+mod statistics;
 mod sys;
