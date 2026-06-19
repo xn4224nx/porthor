@@ -88,7 +88,7 @@ pub fn ntp_sleep_check() -> Option<f32> {
 /// Connect to a random news site and collect the date of a news article.
 /// Compare that date to the current system data and see if they match.
 pub fn news_site_date_check() -> Option<f32> {
-    None
+    unimplemented!("Function `news_site_date_check()` is not implemented!");
 }
 
 #[cfg(test)]
