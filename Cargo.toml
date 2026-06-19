@@ -2,6 +2,13 @@
 name = "porthor"
 version = "0.1.0"
 edition = "2024"
+description = "Methods to detect if the code is running in a virutal machine."
+readme = "README.md"
+repository = "https://github.com/xn4224nx/porthor"
+homepage = "https://github.com/xn4224nx/porthor"
+documentation = "https://github.com/xn4224nx/porthor"
+license-file = "LICENSE.txt"
+keywords = ["skullduggery", "trickery", "jiggery-pokery"]
 
 [lib]
 name = "porthor"
