@@ -33,3 +33,6 @@ target
 
 # Kate temp files
 *.kate-swp
+
+# Ignore the lock file
+Cargo.lock
